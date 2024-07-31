@@ -42,7 +42,7 @@
         groups = [ "rouxinold-autohalt" ];
         commands = [
           {
-            command = "shutdown";
+            command = "${pkgs.systemd}/bin/shutdown";
             options = [ "NOPASSWD" ];
           }
         ];
