@@ -35,5 +35,18 @@
       isNormalUser = true;
     };
     users.groups.rouxinold-autohalt = {};
+
+    security.sudo.extraRules = [
+      {
+        users = [ "rouxinold-autohalt" ];
+        groups = [ "rouxinold-autohalt" ];
+        commands = [
+          {
+            command = "shutdown";
+            options = [ "NOPASSWD" ];
+          }
+        ];
+      }
+    ];
   };
 }

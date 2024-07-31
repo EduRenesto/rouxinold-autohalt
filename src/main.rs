@@ -72,7 +72,6 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                     stderr = stderr,
                     "Could not turn machine off!"
                 );
-                //tracing::error!("Could not turn machine off!", stdout=stdout, stderr=stderr);
             }
         }
 
