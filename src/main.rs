@@ -1,8 +1,8 @@
-use std::{process::exit, time::{Duration, Instant}};
+use std::time::{Duration, Instant};
 
-use tokio::process::Command;
+use tracing::level_filters::LevelFilter;
 use tracing_loki::url::Url;
-use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt};
+use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt, EnvFilter};
 
 mod oci;
 
@@ -24,7 +24,12 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                 .label("host", std::env::var("HOSTNAME")?)?
                 .build_url(Url::parse(&loki_addr)?)?;
 
+            let filter = EnvFilter::builder()
+                .with_default_directive(LevelFilter::INFO.into())
+                .from_env_lossy();
+
             tracing_subscriber::registry()
+                .with(filter)
                 .with(layer)
                 .init();
 
