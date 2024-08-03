@@ -20,6 +20,7 @@
       enable = true;
       environment = {
         "ROUXINOLD_ENV_FILE" = rouxinold-autohalt.envFile;
+        "ROUXINOLD_OCI_CLI_PATH" = "${pkgs.oci-cli}/bin/oci";
       };
       serviceConfig = {
         ExecStart = "${pkgs.rouxinold-autohalt}/bin/rouxinold-autohalt";

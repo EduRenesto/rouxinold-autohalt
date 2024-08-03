@@ -11,6 +11,7 @@
       buildInputs = with pkgs; [
         darwin.apple_sdk.frameworks.SystemConfiguration
         iconv
+        oci-cli
       ];
     };
 

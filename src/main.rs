@@ -1,8 +1,10 @@
-use std::time::{Duration, Instant};
+use std::{process::exit, time::{Duration, Instant}};
 
 use tokio::process::Command;
 use tracing_loki::url::Url;
 use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt};
+
+mod oci;
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
@@ -33,6 +35,8 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         }
     }
 
+    let instance_ocid = std::env::var("ROUXINOLD_INSTANCE_ID")?;
+
     let server_ip = std::env::var("ROUXINOLD_SERVER_IP")?;
     let server_port = std::env::var("ROUXINOLD_SERVER_PORT")?.parse()?;
 
@@ -56,31 +60,33 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         if delta > timeout {
             tracing::info!("Last active date is more than {timeout_secs}s in the past. Shutting down machine.");
 
-            let ret = Command::new("sudo")
-                .arg("shutdown")
-                .arg("now")
-                .output()
-                .await?;
+            let ret = oci::stop_instance(&instance_ocid).await;
 
-            if !ret.status.success() {
-                let stdout = String::from_utf8(ret.stdout)?;
-                let stderr = String::from_utf8(ret.stderr)?;
-
-                tracing::event!(
-                    tracing::Level::ERROR,
-                    stdout = stdout,
-                    stderr = stderr,
-                    "Could not turn machine off!"
-                );
+            match ret {
+                Ok(()) => {
+                    tracing::info!("Shutdown issued! Quitting rouxinold-autohalt...");
+                    return Ok(())
+                }
+                Err(e) => {
+                    tracing::error!("Error shutting down instance: {}", e.to_string());
+                    return Err(e)
+                }
             }
         }
 
-        let stats = mc_query::status(&server_ip, server_port).await?;
+        let stats = mc_query::status(&server_ip, server_port).await;
 
-        tracing::debug!("Players online: {}", stats.players.online);
+        match stats {
+            Ok(stats) => {
+                tracing::debug!("Players online: {}", stats.players.online);
 
-        if stats.players.online > 0 {
-            last_active = Instant::now();
+                if stats.players.online > 0 {
+                    last_active = Instant::now();
+                }
+            }
+            Err(e) => {
+                tracing::error!("Failed to query server {}:{}. Error: {}", server_ip, server_port, e.to_string());
+            }
         }
     }
 }
